@@ -55,5 +55,8 @@
     { "type": "test", "section": "Tests", "hidden": true },
     { "type": "style", "section": "Styles", "hidden": true },
     { "type": "chore", "section": "Chores", "hidden": true }
+  ],
+  "plugins": [
+    { "type": "sentence-case", "specialWords": ["loftd", "loft", "npm"] }
   ]
 }
