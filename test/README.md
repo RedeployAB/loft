@@ -24,10 +24,16 @@ the same suite validates any re-implementation **without regressing any app**.
 `cli.test.mjs` (CLI, hermetic): the `loft deploy` guardrails that run before any network/auth, like
 empty folder, missing `index.html`, `node_modules/`, leaked `.env`, disallowed types, oversize files.
 
+`web-routing.test.mjs` (loft-web, static serving): runs the real `web/nginx.conf` over a temp sites
+tree and pins how a miss is served: SPA deep links fall back to the app shell with a 200, a missing
+asset stays a real 404, and a site's own `404.html` opts it back into classic per-path 404s.
+
 ## Prerequisites
 
-- Docker (the harness starts ephemeral **Postgres** and **llmock** containers).
+- Docker (the harness starts ephemeral **Postgres** and **llmock** containers; the web routing test
+  runs an **nginx** container).
 - Node 18+ (test runner) and Go 1.26+ (builds the default backend/CLI under test).
+- `curl` on PATH (the web routing test sends requests with specific Host and Accept headers).
 
 The harness pulls `ghcr.io/larsakerlund/llmock` automatically if not cached. Postgres runs as a
 **restricted, table-owning role** (not superuser) so row-level security is genuinely exercised. A
