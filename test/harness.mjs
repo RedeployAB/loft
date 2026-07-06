@@ -28,8 +28,8 @@ const REPO = resolve(HERE, "..");
 const FIXTURES = join(HERE, "llmock.fixtures.yaml");
 const TAG = `loft-test-${process.pid}`;
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const freePort = () =>
+export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+export const freePort = () =>
   new Promise((res, rej) => {
     const s = net.createServer();
     s.once("error", rej);
@@ -39,7 +39,7 @@ const freePort = () =>
     });
   });
 
-function docker(args, opts = {}) {
+export function docker(args, opts = {}) {
   return execFileSync("docker", args, { encoding: "utf8", ...opts });
 }
 

@@ -26,6 +26,24 @@ Each release publishes two images to GHCR:
 - `ghcr.io/larsakerlund/loft`: the API daemon (loftd).
 - `ghcr.io/larsakerlund/loft-web`: the root site and static file server (also the local-dev proxy).
 
+## Serving deployed sites
+
+A deployed site is served as plain static files, and a real file always wins. What happens on a miss
+depends on the request and on whether the site ships a `404.html`:
+
+- Single-page apps work by default. A page request (one whose `Accept` includes `text/html`) for a
+  path with no file gets `index.html` back with a `200`, so a client-side router resolves deep links
+  like `/dashboard` on a hard load or refresh, with a clean URL. An unknown route renders whatever the
+  app's own router shows for no match, since the shell was served.
+- A `404.html` opts out. If the site's root contains a `404.html`, a page miss returns it with a real
+  `404` status and no fallback happens. This is the classic multi-page behavior: ship a `404.html`
+  when you want the server to answer misses. Note this is the inverse of GitHub Pages, where a
+  `404.html` is the way to get single-page fallback: here a single-page app wants no `404.html`, and
+  its own not-found view is a client-side route.
+- Non-document requests always 404. A request whose `Accept` does not include `text/html` (a script,
+  stylesheet, image, or `fetch`) never falls back to the shell, so a never-deployed `/assets/app.js`
+  returns a real `404` instead of `200` HTML that the browser would reject for the wrong MIME type.
+
 ## Configuration
 
 loftd reads its configuration from the environment. [`.env.example`](../.env.example) documents every
