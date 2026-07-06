@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/larsakerlund/loft/compare/v0.1.3...v0.1.4) (2026-07-06)
+
+
+### Features
+
+* Serve the app shell for SPA deep links by default ([#8](https://github.com/larsakerlund/loft/issues/8)) ([8a62b37](https://github.com/larsakerlund/loft/commit/8a62b3705ba9332f140f177ca4e124774d14815c))
+
 ## [0.1.3](https://github.com/larsakerlund/loft/compare/v0.1.2...v0.1.3) (2026-07-01)
 
 
