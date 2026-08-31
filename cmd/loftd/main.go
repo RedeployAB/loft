@@ -13,8 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/larsakerlund/loft/internal/config"
-	"github.com/larsakerlund/loft/internal/server"
+	"github.com/RedeployAB/loft/internal/config"
+	"github.com/RedeployAB/loft/internal/server"
 )
 
 // shutdownGrace bounds how long in-flight requests have to finish on SIGTERM before loftd exits.

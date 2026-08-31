@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"slices"
 
-	"github.com/larsakerlund/loft/internal/identity"
+	"github.com/RedeployAB/loft/internal/identity"
 )
 
 type ctxKey struct{}

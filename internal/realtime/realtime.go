@@ -16,7 +16,7 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/larsakerlund/loft/internal/web"
+	"github.com/RedeployAB/loft/internal/web"
 )
 
 const (

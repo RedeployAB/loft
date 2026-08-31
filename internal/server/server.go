@@ -9,14 +9,14 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/larsakerlund/loft/internal/ai"
-	"github.com/larsakerlund/loft/internal/config"
-	"github.com/larsakerlund/loft/internal/db"
-	"github.com/larsakerlund/loft/internal/deploy"
-	"github.com/larsakerlund/loft/internal/identity"
-	"github.com/larsakerlund/loft/internal/realtime"
-	"github.com/larsakerlund/loft/internal/uploads"
-	"github.com/larsakerlund/loft/internal/web"
+	"github.com/RedeployAB/loft/internal/ai"
+	"github.com/RedeployAB/loft/internal/config"
+	"github.com/RedeployAB/loft/internal/db"
+	"github.com/RedeployAB/loft/internal/deploy"
+	"github.com/RedeployAB/loft/internal/identity"
+	"github.com/RedeployAB/loft/internal/realtime"
+	"github.com/RedeployAB/loft/internal/uploads"
+	"github.com/RedeployAB/loft/internal/web"
 )
 
 // Server is loftd's assembled HTTP application.

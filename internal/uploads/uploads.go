@@ -19,9 +19,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/larsakerlund/loft/internal/config"
-	"github.com/larsakerlund/loft/internal/limit"
-	"github.com/larsakerlund/loft/internal/web"
+	"github.com/RedeployAB/loft/internal/config"
+	"github.com/RedeployAB/loft/internal/limit"
+	"github.com/RedeployAB/loft/internal/web"
 )
 
 const maxBytes = 25 * 1024 * 1024 // matches the CLI's per-file limit

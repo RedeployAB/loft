@@ -23,7 +23,7 @@ deploy it. No Loft to deploy to yet? See [Run your own](#run-your-own).
 
 ## Build the app
 
-A deployed site bundles [`loft-js`](https://github.com/larsakerlund/loft-js), a small browser SDK.
+A deployed site bundles [`loft-js`](https://github.com/RedeployAB/loft-js), a small browser SDK.
 Every call is same-origin, scoped to the site and the signed-in user:
 
 ```js
@@ -38,7 +38,7 @@ const reply = await loft.ai.chat([{ role: "user", content: "..." }]); // an LLM,
 ```
 
 The keys, database, and storage stay server-side, and each site's data is isolated from the rest. The
-full API reference lives in the [`loft-js`](https://github.com/larsakerlund/loft-js) repo.
+full API reference lives in the [`loft-js`](https://github.com/RedeployAB/loft-js) repo.
 
 ## Run your own
 

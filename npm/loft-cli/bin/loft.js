@@ -10,7 +10,7 @@ const path = require("node:path");
 
 const platform = process.platform; // darwin | linux | win32
 const arch = process.arch; // arm64 | x64
-const pkg = `@larsakerlund/loft-cli-${platform}-${arch}`;
+const pkg = `@redeploy/loft-cli-${platform}-${arch}`;
 const exe = platform === "win32" ? "loft.exe" : "loft";
 
 let binary;
@@ -20,7 +20,7 @@ try {
   console.error(
     `loft-cli: no prebuilt binary for ${platform}-${arch}.\n` +
       `The optional dependency ${pkg} did not install. Reinstall loft-cli, or build from source\n` +
-      `(https://github.com/larsakerlund/loft).`,
+      `(https://github.com/RedeployAB/loft).`,
   );
   process.exit(1);
 }

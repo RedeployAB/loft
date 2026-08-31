@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Report suspected vulnerabilities privately through GitHub. Open a report under the repository's
-[Security Advisories](https://github.com/larsakerlund/loft/security/advisories/new) page rather than a
+[Security Advisories](https://github.com/RedeployAB/loft/security/advisories/new) page rather than a
 public issue or pull request. Include the version or commit, a description, and steps to reproduce.
 
 Please do not file a public issue for a security problem, and give us time to ship a fix before

@@ -19,8 +19,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/larsakerlund/loft/internal/limit"
-	"github.com/larsakerlund/loft/internal/web"
+	"github.com/RedeployAB/loft/internal/limit"
+	"github.com/RedeployAB/loft/internal/web"
 )
 
 // collectionRe bounds collection names: short, predictable identifiers, no slashes, control chars,

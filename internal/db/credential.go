@@ -12,7 +12,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 
-	"github.com/larsakerlund/loft/internal/config"
+	"github.com/RedeployAB/loft/internal/config"
 )
 
 const pgScope = "https://ossrdbms-aad.database.windows.net/.default"

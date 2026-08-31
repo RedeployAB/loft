@@ -95,4 +95,4 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/larsakerlund/loft
+        - github.com/RedeployAB/loft

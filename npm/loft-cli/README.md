@@ -1,6 +1,6 @@
 # loft-cli
 
-Deploy apps to a [Loft](https://github.com/larsakerlund/loft) platform.
+Deploy apps to a [Loft](https://github.com/RedeployAB/loft) platform.
 
 ```bash
 npx loft-cli login https://loft.example.com   # discovers OAuth config from the URL, device-flow sign-in
