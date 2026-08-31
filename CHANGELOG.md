@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.6](https://github.com/RedeployAB/loft/compare/v0.1.5...v0.1.6) (2026-08-31)
+
+
+### Dependencies
+
+* Bump go modules and the build image ([#13](https://github.com/RedeployAB/loft/issues/13)) ([0d1c624](https://github.com/RedeployAB/loft/commit/0d1c62450928fa9ed8487ee6109bbc8b310ffd07))
+
+
+### Chores
+
+* Release 0.1.6 ([c4a65eb](https://github.com/RedeployAB/loft/commit/c4a65eb18fccae4560e478f1cb44464889e57770))
+
 ## [0.1.5](https://github.com/RedeployAB/loft/compare/v0.1.4...v0.1.5) (2026-08-31)
 
 
