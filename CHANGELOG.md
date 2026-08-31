@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/RedeployAB/loft/compare/v0.1.4...v0.1.5) (2026-08-31)
+
+
+### Build
+
+* Move the repo and npm scope to redeploy ([#10](https://github.com/RedeployAB/loft/issues/10)) ([965968d](https://github.com/RedeployAB/loft/commit/965968dec05c42fb3b6e9e98aaacd591299aad55))
+
 ## [0.1.4](https://github.com/larsakerlund/loft/compare/v0.1.3...v0.1.4) (2026-07-06)
 
 
