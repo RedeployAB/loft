@@ -53,10 +53,12 @@ jobs:
       version: ${{ steps.r.outputs.version }}
       major: ${{ steps.r.outputs.major }}
       minor: ${{ steps.r.outputs.minor }}
+      owner: ${{ steps.r.outputs.owner }}
     steps:
       - id: r
         env:
           TAG: ${{ github.event.inputs.tag || needs.release-please.outputs.tag_name }}
+          OWNER: ${{ github.repository_owner }}
         run: |
           v="${TAG#v}"
           {
@@ -64,6 +66,7 @@ jobs:
             echo "version=$v"
             echo "major=${v%%.*}"
             echo "minor=$(printf '%s' "$v" | cut -d. -f2)"
+            echo "owner=$(printf '%s' "$OWNER" | tr '[:upper:]' '[:lower:]')"
           } >> "$GITHUB_OUTPUT"
 
   # Cross-compile the CLI for every platform, stamp the version into the binaries, and publish loft-cli
@@ -170,7 +173,7 @@ jobs:
       - id: meta
         uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
         with:
-          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          images: ghcr.io/${{ needs.setup.outputs.owner }}/${{ matrix.image }}
       # Build this arch natively into the local daemon and scan it BEFORE any push, so a vulnerable
       # image never reaches the registry. The push below reuses the warmed layers, so the scan adds no
       # recompile.
@@ -200,7 +203,7 @@ jobs:
           file: ${{ matrix.dockerfile }}
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
-          outputs: type=image,name=ghcr.io/${{ github.repository_owner }}/${{ matrix.image }},push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=ghcr.io/${{ needs.setup.outputs.owner }}/${{ matrix.image }},push-by-digest=true,name-canonical=true,push=true
           # No cache on a release build: a release is a trust anchor, so it builds clean from source.
           provenance: false
       - name: export the digest
@@ -248,7 +251,7 @@ jobs:
       - id: meta
         uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
         with:
-          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          images: ghcr.io/${{ needs.setup.outputs.owner }}/${{ matrix.image }}
           tags: |
             type=raw,value=${{ needs.setup.outputs.version }}
             type=raw,value=${{ needs.setup.outputs.major }}.${{ needs.setup.outputs.minor }}
@@ -257,7 +260,7 @@ jobs:
       - name: create and push the multi-arch manifest
         working-directory: ${{ runner.temp }}/digests
         env:
-          REPO: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          REPO: ghcr.io/${{ needs.setup.outputs.owner }}/${{ matrix.image }}
         run: |
           args=()
           while IFS= read -r tag; do args+=(--tag "$tag"); done \
@@ -267,7 +270,7 @@ jobs:
       - id: digest
         name: read the manifest digest
         env:
-          REPO: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          REPO: ghcr.io/${{ needs.setup.outputs.owner }}/${{ matrix.image }}
           VERSION: ${{ needs.setup.outputs.version }}
         run: |
           digest=$(docker buildx imagetools inspect "$REPO:$VERSION" \
@@ -275,6 +278,6 @@ jobs:
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
       - uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
         with:
-          subject-name: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          subject-name: ghcr.io/${{ needs.setup.outputs.owner }}/${{ matrix.image }}
           subject-digest: ${{ steps.digest.outputs.digest }}
           push-to-registry: true
