@@ -1,6 +1,6 @@
 {
   "name": "@redeploy/loft-cli-linux-arm64",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Prebuilt loft CLI binary for linux/arm64.",
   "os": [
     "linux"
