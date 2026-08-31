@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/larsakerlund/loft/internal/cli"
+	"github.com/RedeployAB/loft/internal/cli"
 )
 
 func main() {

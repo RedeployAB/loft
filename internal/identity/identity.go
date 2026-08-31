@@ -17,7 +17,7 @@ import (
 
 	"github.com/coreos/go-oidc/v3/oidc"
 
-	"github.com/larsakerlund/loft/internal/config"
+	"github.com/RedeployAB/loft/internal/config"
 )
 
 // User is the signed-in user, exposed to apps via /api/me.

@@ -8,7 +8,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 
-	"github.com/larsakerlund/loft/internal/config"
+	"github.com/RedeployAB/loft/internal/config"
 )
 
 // blobStore writes uploads to an Azure Blob container, authenticated either by a managed identity

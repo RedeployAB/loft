@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/larsakerlund/loft/internal/web"
+	"github.com/RedeployAB/loft/internal/web"
 )
 
 var (

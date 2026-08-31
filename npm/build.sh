@@ -10,7 +10,7 @@ set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 repo="$(cd "$here/.." && pwd)"
 version="${1:-${LOFT_VERSION:-dev}}"
-ldflags="-s -w -X github.com/larsakerlund/loft/internal/cli.version=$version"
+ldflags="-s -w -X github.com/RedeployAB/loft/internal/cli.version=$version"
 
 # package suffix : GOOS : GOARCH   (npm os/cpu on the left, Go's on the right)
 targets=(

@@ -1,5 +1,5 @@
 {
-  "name": "@larsakerlund/loft-cli-linux-x64",
+  "name": "@redeploy/loft-cli-linux-x64",
   "version": "0.1.4",
   "description": "Prebuilt loft CLI binary for linux/x64.",
   "os": [
@@ -14,7 +14,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/larsakerlund/loft.git",
+    "url": "git+https://github.com/RedeployAB/loft.git",
     "directory": "npm/loft-cli-linux-x64"
   },
   "publishConfig": {

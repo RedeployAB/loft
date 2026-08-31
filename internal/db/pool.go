@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/larsakerlund/loft/internal/config"
+	"github.com/RedeployAB/loft/internal/config"
 )
 
 // ErrNotConfigured means no Postgres connection is configured (loft.db is unavailable).

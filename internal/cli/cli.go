@@ -20,7 +20,7 @@ var ErrUsage = errors.New("usage")
 const brand = "loft"
 
 // version is the CLI version, set at build time with -ldflags "-X
-// github.com/larsakerlund/loft/internal/cli.version=<tag>". It is "dev" for an unstamped local build.
+// github.com/RedeployAB/loft/internal/cli.version=<tag>". It is "dev" for an unstamped local build.
 var version = "dev"
 
 // Run dispatches a CLI invocation. It returns ErrUsage for an unknown command, nil for help/success.

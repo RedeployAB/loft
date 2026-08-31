@@ -1,4 +1,4 @@
-module github.com/larsakerlund/loft
+module github.com/RedeployAB/loft
 
 go 1.26.4
 

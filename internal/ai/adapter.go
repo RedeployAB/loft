@@ -16,7 +16,7 @@ import (
 	"github.com/openai/openai-go/v3/option"
 	"github.com/openai/openai-go/v3/shared"
 
-	"github.com/larsakerlund/loft/internal/config"
+	"github.com/RedeployAB/loft/internal/config"
 )
 
 const aiScope = "https://cognitiveservices.azure.com/.default"
