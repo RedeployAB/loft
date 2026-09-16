@@ -77,7 +77,7 @@ while it does its local work, capped at a second: below `cli.min` or on the bloc
 stops before uploading; behind `version`, the command finishes and one line on stderr points at the
 update (not in CI, and not when output is captured). The deploy API refuses an unsupported CLI on
 its own as well, from the `User-Agent` it sends, so a CLI that skipped the check gets the same
-answer. CLIs before 0.2.0 send no such `User-Agent`; they are not refused by version, and fail on
+answer. CLIs before 0.1.8 send no such `User-Agent`; they are not refused by version, and fail on
 a protocol change itself.
 
 Set `LOFT_CLI_BLOCKED_VERSIONS` (comma-separated tags) to refuse specific CLI releases, for the case
