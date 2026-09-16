@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/RedeployAB/loft/internal/config"
 )
 
 // buildForm writes a deploy multipart body: the site field first (the server requires it before the
@@ -158,6 +160,20 @@ func TestStageRefusesNonSiteFiles(t *testing.T) {
 				t.Fatalf("%q in staging = %v, want %v", tc.rel, present, tc.staged)
 			}
 		})
+	}
+}
+
+// TestPolicy checks the wiring, since the rule itself is tested in release: the service advertises
+// the minimum it enforces, and blocked versions from config come through as a JSON array even when
+// none are set.
+func TestPolicy(t *testing.T) {
+	p := New(config.Config{}).Policy()
+	if p.Min != minCLIVersion || p.Blocked == nil || len(p.Blocked) != 0 {
+		t.Fatalf("Policy() = %+v, want min %s and an empty, non-nil blocked list", p, minCLIVersion)
+	}
+	p = New(config.Config{CLIBlockedVersions: []string{"v0.1.4"}}).Policy()
+	if len(p.Blocked) != 1 || p.Blocked[0] != "v0.1.4" {
+		t.Fatalf("Policy().Blocked = %v, want [v0.1.4]", p.Blocked)
 	}
 }
 

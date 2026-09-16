@@ -16,6 +16,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/RedeployAB/loft/internal/release"
 )
 
 // errSiteExists is returned by deploy when the site already exists and overwrite was not requested,
@@ -104,6 +106,7 @@ func (c *loftClient) newRequest(ctx context.Context, method, path string, body i
 		return nil, err
 	}
 	req.Header.Set("X-Loft-Deploy-Client", "cli")
+	req.Header.Set("User-Agent", release.UserAgent())
 	if c.token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.token)
 	}

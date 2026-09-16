@@ -15,6 +15,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/RedeployAB/loft/internal/release"
 )
 
 // ctlClient is the control-plane HTTP client (discovery + token endpoints). Bounded timeout so a
@@ -179,11 +181,15 @@ func clearOrAdopt(c credentials) string {
 
 // --- platform discovery: configure login from the platform URL alone ---
 
-// cliConfig is the public OAuth config a deployment advertises at /.well-known/loft.
+// cliConfig is what a deployment advertises at /.well-known/loft: the public OAuth config for
+// `loft login`, and the versions the update check compares against. A platform that predates those
+// fields leaves them empty, which imposes nothing.
 type cliConfig struct {
-	Issuer   string `json:"issuer"`
-	ClientID string `json:"clientId"`
-	Scope    string `json:"scope"`
+	Issuer   string         `json:"issuer"`
+	ClientID string         `json:"clientId"`
+	Scope    string         `json:"scope"`
+	Version  string         `json:"version"` // the loftd release, and so the CLI release it shipped with
+	CLI      release.Policy `json:"cli"`
 }
 
 // discoverConfig fetches /.well-known/loft from the platform so `loft login <url>` needs nothing but
@@ -203,6 +209,7 @@ func discoverConfig(ctx context.Context, base string) (cliConfig, error) {
 	if err != nil {
 		return c, err
 	}
+	req.Header.Set("User-Agent", release.UserAgent())
 	resp, err := ctlClient.Do(req) //nolint:gosec // G704: request to the user-provided platform URL, see above
 	if err != nil {
 		return c, fmt.Errorf("reaching %s: %w", u.Host, err)

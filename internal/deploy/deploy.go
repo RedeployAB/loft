@@ -34,6 +34,7 @@ import (
 
 	"github.com/RedeployAB/loft/internal/config"
 	"github.com/RedeployAB/loft/internal/limit"
+	"github.com/RedeployAB/loft/internal/release"
 	"github.com/RedeployAB/loft/internal/siterules"
 	"github.com/RedeployAB/loft/internal/web"
 )
@@ -43,18 +44,35 @@ const (
 	deployBurst   = 10
 )
 
+// minCLIVersion is the oldest CLI this API still speaks to. Bump it only when the deploy protocol
+// changes in a way an older CLI cannot follow (the multipart shape, a required header, the auth
+// exchange); a rule change the server enforces on its own does not count. CLIs before v0.2.0 sent
+// no loft-cli User-Agent, so the gate below cannot reach them: they fail on the protocol change
+// itself. Only a CLI from v0.2.0 on gets the readable refusal.
+const minCLIVersion = "v0.1.0"
+
 // Service is the loft deploy HTTP service.
 type Service struct {
 	dir     string
 	deploys *limit.Limiter
+	policy  release.Policy
 }
 
 // New builds the service. The sites dir always has a value (config defaults it to the mount path),
 // and deploy is gated to the root site regardless, so unlike db/uploads there is no
 // "not configured" state to fall back to.
 func New(cfg config.Config) *Service {
-	return &Service{dir: cfg.SitesDir, deploys: limit.New(deploysPerMin, deployBurst)}
+	return &Service{
+		dir:     cfg.SitesDir,
+		deploys: limit.New(deploysPerMin, deployBurst),
+		// A non-nil slice, so the policy serializes as [] rather than null in discovery.
+		policy: release.Policy{Min: minCLIVersion, Blocked: append([]string{}, cfg.CLIBlockedVersions...)},
+	}
 }
+
+// Policy is what this API requires of a CLI. Discovery advertises it so a CLI can refuse before
+// uploading; Handler enforces the same value for the ones that do not check.
+func (s *Service) Policy() release.Policy { return s.policy }
 
 // Handler serves POST /api/deploy (publish a site) and DELETE /api/deploy?site=<name> (remove one).
 func (s *Service) Handler() http.Handler {
@@ -66,6 +84,17 @@ func (s *Service) Handler() http.Handler {
 		if msg, ok := deployAllowed(r); !ok {
 			web.Error(w, http.StatusForbidden, msg)
 			return
+		}
+		// Plain text, since the old CLI this is for prints the body as-is. A User-Agent that does not
+		// parse (the console, a dev build) is left alone; the content rules still apply to it. The
+		// body is drained first: the CLI streams it, and closing on an unread stream surfaces to the
+		// user as a write error instead of this message.
+		if cur, ok := release.ParseUserAgent(r.UserAgent()); ok {
+			if err := s.policy.Check(cur); err != nil {
+				_, _ = io.Copy(io.Discard, io.LimitReader(r.Body, siterules.MaxTotalBytes+1<<20))
+				web.Error(w, http.StatusBadRequest, err.Error())
+				return
+			}
 		}
 		user, _ := web.User(r.Context())
 		if !s.deploys.Allow(user.ID) {

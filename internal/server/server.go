@@ -15,6 +15,7 @@ import (
 	"github.com/RedeployAB/loft/internal/deploy"
 	"github.com/RedeployAB/loft/internal/identity"
 	"github.com/RedeployAB/loft/internal/realtime"
+	"github.com/RedeployAB/loft/internal/release"
 	"github.com/RedeployAB/loft/internal/uploads"
 	"github.com/RedeployAB/loft/internal/web"
 )
@@ -65,7 +66,8 @@ func New(ctx context.Context, cfg config.Config) (*Server, error) {
 
 	// loft deploy: POST publishes a site, DELETE removes one. Gated to the apex origin (the root site or
 	// the CLI) inside the handler, which also rejects other methods.
-	mux.Handle("/api/deploy", auth(deploy.New(cfg).Handler()))
+	deploys := deploy.New(cfg)
+	mux.Handle("/api/deploy", auth(deploys.Handler()))
 
 	// loft.ai (the handler itself reports 501 when the endpoint isn't configured)
 	aiSvc := ai.New(cfg)
@@ -78,7 +80,7 @@ func New(ctx context.Context, cfg config.Config) (*Server, error) {
 
 	// CLI discovery: public (no auth), so `loft login <url>` configures itself from the URL alone.
 	// Everything returned is public OAuth client config; a public client id is not a secret.
-	mux.Handle("GET /.well-known/loft", cliConfigHandler(cfg))
+	mux.Handle("GET /.well-known/loft", cliConfigHandler(cfg, deploys.Policy()))
 
 	s.handler = mux
 	return s, nil
@@ -105,14 +107,17 @@ func meHandler(w http.ResponseWriter, r *http.Request) {
 	web.JSON(w, http.StatusOK, user)
 }
 
-// cliConfigHandler serves the public OAuth configuration the CLI needs to log in: the OIDC issuer,
-// the CLI's public client id, and the scope to request.
-func cliConfigHandler(cfg config.Config) http.Handler {
+// cliConfigHandler serves what the CLI needs to know about the platform without signing in: the
+// OAuth configuration for `loft login`, and the versions that let it tell whether it is out of date
+// (this loftd's version) or unsupported (the oldest CLI the deploy API accepts, and any blocked).
+func cliConfigHandler(cfg config.Config, policy release.Policy) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		web.JSON(w, http.StatusOK, map[string]any{
 			"issuer":   cfg.OIDCIssuerURL(),
 			"clientId": cfg.CLIClientID,
 			"scope":    cfg.CLIScope,
+			"version":  release.Version,
+			"cli":      policy,
 		})
 	})
 }

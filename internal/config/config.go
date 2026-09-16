@@ -63,8 +63,9 @@ type Config struct {
 
 	// CLI discovery. Served unauthenticated at /.well-known/loft so `loft login <url>` can configure
 	// itself from the platform URL alone. All public values (a public client id is not a secret).
-	CLIClientID string // the CLI's public OAuth client id (device flow); empty ⇒ discovery off
-	CLIScope    string // the scope `loft login` requests (default "openid offline_access")
+	CLIClientID        string   // the CLI's public OAuth client id (device flow); empty ⇒ discovery off
+	CLIScope           string   // the scope `loft login` requests (default "openid offline_access")
+	CLIBlockedVersions []string // CLI releases the deploy API refuses outright (LOFT_CLI_BLOCKED_VERSIONS)
 }
 
 // Load reads the environment and applies defaults.
@@ -98,6 +99,7 @@ func Load() Config {
 		DevUser:            os.Getenv("LOFT_DEV_USER"),
 		CLIClientID:        os.Getenv("LOFT_CLI_CLIENT_ID"),
 		CLIScope:           env("LOFT_CLI_SCOPE", "openid offline_access"),
+		CLIBlockedVersions: envList("LOFT_CLI_BLOCKED_VERSIONS"),
 	}
 }
 
@@ -127,13 +129,7 @@ func (c Config) OIDCIssuerURL() string {
 // (its own client) can be authorized. Empty means the pin is off (audience + scope alone gate the
 // token); setting it does not depend on, and is independent of, the discovery CLIClientID.
 func (c Config) AuthorizedClientIDs() []string {
-	var ids []string
-	for s := range strings.SplitSeq(c.AuthorizedClientID, ",") {
-		if s = strings.TrimSpace(s); s != "" {
-			ids = append(ids, s)
-		}
-	}
-	return ids
+	return splitList(c.AuthorizedClientID)
 }
 
 // Validate rejects dangerous misconfigurations at startup. In particular, access-token validation
@@ -161,6 +157,22 @@ func env(key, def string) string {
 		return v
 	}
 	return def
+}
+
+// envList reads a comma-separated variable; see splitList.
+func envList(key string) []string {
+	return splitList(os.Getenv(key))
+}
+
+// splitList splits a comma-separated value, trimming blanks. Empty yields nil.
+func splitList(v string) []string {
+	var out []string
+	for s := range strings.SplitSeq(v, ",") {
+		if s = strings.TrimSpace(s); s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 func envInt(key string, def int) int {
