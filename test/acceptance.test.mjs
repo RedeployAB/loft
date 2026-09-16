@@ -241,6 +241,13 @@ describe("CLI discovery (/.well-known/loft)", () => {
     assert.equal(res.json.clientId, "cli-public-id");
     assert.match(res.json.scope, /access_as_user/);
   });
+
+  it("advertises the versions the CLI compares itself against", async () => {
+    const res = await t.req("GET", "/.well-known/loft", { anon: true });
+    assert.equal(typeof res.json.version, "string"); // "dev" for the test build, a tag in a release
+    assert.match(res.json.cli.min, /^v\d+\.\d+\.\d+$/);
+    assert.deepEqual(res.json.cli.blocked, []);
+  });
 });
 
 describe("deploy + delete", () => {
@@ -291,6 +298,22 @@ describe("deploy + delete", () => {
 
     const del = await t.req("DELETE", "/api/deploy?site=rules", bob);
     assert.equal(del.status, 404, "a refused deploy must not create the site");
+  });
+
+  it("refuses a CLI older than the advertised minimum without deploying anything", async () => {
+    // The CLI checks discovery itself first; this is the server's answer to one that did not. A
+    // version it cannot parse (a dev build, a browser) is left alone. Runs as its own user for the
+    // same rate-limit reason as the content-rules test.
+    const carol = { ...apex, user: "carol" };
+    const old = await t.req("POST", "/api/deploy", { ...carol, headers: { ...cli, "User-Agent": "loft-cli/v0.0.1 (linux/amd64)" }, raw: siteForm("oldcli") });
+    assert.equal(old.status, 400, old.text);
+    assert.match(old.text, /too old .*needs v\d+\.\d+\.\d+/);
+    assert.match(old.text, /npm i -g loft-cli@latest/);
+    assert.equal((await t.req("DELETE", "/api/deploy?site=oldcli", { ...carol, headers: cli })).status, 404, "nothing was deployed");
+
+    const dev = await t.req("POST", "/api/deploy", { ...carol, headers: { ...cli, "User-Agent": "loft-cli/dev (darwin/arm64)" }, raw: siteForm("devcli") });
+    assert.equal(dev.status, 200, dev.text);
+    await t.req("DELETE", "/api/deploy?site=devcli", { ...carol, headers: cli });
   });
 
   it("refuses a browser deploy with neither same-origin nor the CLI header (CSRF gate)", async () => {

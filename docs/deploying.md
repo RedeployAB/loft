@@ -66,3 +66,20 @@ variable, including the Azure and managed-identity alternatives. The ones a basi
 To let `loft login <url>` configure itself from the platform URL alone, set `LOFT_CLI_CLIENT_ID` and
 `LOFT_CLI_SCOPE`. loftd serves them at `/.well-known/loft`, which the proxy must leave reachable
 without authentication.
+
+## CLI versions
+
+loftd and the CLI ship from the same tag, and the platform is what tells a CLI where it stands.
+`/.well-known/loft` also carries loftd's `version`, the oldest CLI the deploy API accepts
+(`cli.min`, a constant in loftd that moves only when the deploy protocol changes), and any releases
+refused outright (`cli.blocked`). On `deploy` and `delete` the CLI reads this in the background
+while it does its local work, capped at a second: below `cli.min` or on the blocked list, `deploy`
+stops before uploading; behind `version`, the command finishes and one line on stderr points at the
+update (not in CI, and not when output is captured). The deploy API refuses an unsupported CLI on
+its own as well, from the `User-Agent` it sends, so a CLI that skipped the check gets the same
+answer. CLIs before 0.2.0 send no such `User-Agent`; they are not refused by version, and fail on
+a protocol change itself.
+
+Set `LOFT_CLI_BLOCKED_VERSIONS` (comma-separated tags) to refuse specific CLI releases, for the case
+where a release has a defect and a notice is not enough. It is normally unset. Users can turn the
+check off with `LOFT_NO_UPDATE_CHECK`.

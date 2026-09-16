@@ -14,7 +14,10 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /loftd ./cmd/loftd
+# The release tag, stamped into the binary so loftd can advertise its version to the CLI. "dev" for a
+# local build.
+ARG LOFT_VERSION=dev
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X github.com/RedeployAB/loft/internal/release.Version=$LOFT_VERSION" -o /loftd ./cmd/loftd
 
 FROM alpine:3.22
 # Pull the latest alpine security patches on top of the base image, so a CVE fixed in the package

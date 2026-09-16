@@ -12,16 +12,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/RedeployAB/loft/internal/release"
 )
 
 // ErrUsage signals a usage error (unknown command). The caller should exit with code 2.
 var ErrUsage = errors.New("usage")
 
 const brand = "loft"
-
-// version is the CLI version, set at build time with -ldflags "-X
-// github.com/RedeployAB/loft/internal/cli.version=<tag>". It is "dev" for an unstamped local build.
-var version = "dev"
 
 // Run dispatches a CLI invocation. It returns ErrUsage for an unknown command, nil for help/success.
 func Run(ctx context.Context, args []string) error {
@@ -39,7 +37,7 @@ func Run(ctx context.Context, args []string) error {
 	case "whoami":
 		return runWhoami(ctx, args[1:])
 	case "version", "--version", "-v":
-		fmt.Printf("%s %s\n", brand, version)
+		fmt.Printf("%s %s\n", brand, release.Version)
 		return nil
 	case "", "help", "-h", "--help":
 		usage()
@@ -75,7 +73,11 @@ func runDeploy(ctx context.Context, args []string) error {
 	_, force := flags["force"]
 	name := sanitizeSite(firstNonEmpty(at(pos, 1), filepath.Base(dir)))
 
-	// Validate locally before any network/auth, so bad input fails instantly with every reason.
+	// The version check overlaps the folder walk; its verdict is read just before anything is uploaded.
+	base := resolveBase(flags)
+	check := startVersionCheck(ctx, base)
+
+	// Validate locally before auth or upload, so bad input fails instantly with every reason.
 	entries, err := collect(dir)
 	if err != nil {
 		return err
@@ -84,9 +86,11 @@ func runDeploy(ctx context.Context, args []string) error {
 		return err
 	}
 
-	base := resolveBase(flags)
 	if base == "" {
 		return errors.New("no platform URL: pass --url, set LOFT_URL, or run `loft login`")
+	}
+	if err := check.errUnsupported(); err != nil {
+		return err
 	}
 	client := newSessionClient(base)
 
@@ -95,6 +99,7 @@ func runDeploy(ctx context.Context, args []string) error {
 		return err
 	}
 	fmt.Printf("✓ deployed %d files to %s\n", res.Files, siteURL(base, res.Site))
+	check.printUpdateNotice()
 	return nil
 }
 
@@ -128,6 +133,8 @@ func runDelete(ctx context.Context, args []string) error {
 	if base == "" {
 		return errors.New("no platform URL: pass --url, set LOFT_URL, or run `loft login`")
 	}
+	// Only for the notice: a delete has no body to save, and the API refuses an unsupported CLI itself.
+	check := startVersionCheck(ctx, base)
 	if _, force := flags["force"]; !force {
 		if ask(fmt.Sprintf("? Type '%s' to confirm deletion: ", name)) != name {
 			return errors.New("aborted (name did not match)")
@@ -141,6 +148,7 @@ func runDelete(ctx context.Context, args []string) error {
 		return err
 	}
 	fmt.Printf("✓ deleted site %q\n", name)
+	check.printUpdateNotice()
 	return nil
 }
 

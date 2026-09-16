@@ -18,8 +18,10 @@ loft delete blog
 ```
 
 `loft deploy` checks the folder locally and uploads it; the site is live at a subdomain of the
-platform. Or skip the CLI entirely: open the platform in a browser and drag a folder onto the page to
-deploy it. No Loft to deploy to yet? See [Run your own](#run-your-own).
+platform. When the platform runs a newer release than your CLI, `deploy` and `delete` say so after
+finishing (`LOFT_NO_UPDATE_CHECK` turns that off). Or skip the CLI entirely: open the platform in a
+browser and drag a folder onto the page to deploy it. No Loft to deploy to yet? See
+[Run your own](#run-your-own).
 
 ## Build the app
 

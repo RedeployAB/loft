@@ -27,6 +27,9 @@ Usage:
 
 The platform URL comes from --url, LOFT_URL, or the saved login. For CI, set LOFT_TOKEN
 to a bearer token instead of running login.
+
+deploy and delete mention a newer CLI when the platform runs one; LOFT_NO_UPDATE_CHECK turns
+the check off.
 `, brand, brand, brand, brand, brand, brand)
 }
 

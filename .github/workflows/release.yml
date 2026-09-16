@@ -185,6 +185,7 @@ jobs:
           load: true
           platforms: ${{ matrix.platform }}
           tags: ${{ matrix.image }}:scan
+          build-args: LOFT_VERSION=${{ needs.setup.outputs.tag }}
       - name: scan the image for vulnerabilities
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -203,6 +204,7 @@ jobs:
           file: ${{ matrix.dockerfile }}
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: LOFT_VERSION=${{ needs.setup.outputs.tag }}
           outputs: type=image,name=ghcr.io/${{ needs.setup.outputs.owner }}/${{ matrix.image }},push-by-digest=true,name-canonical=true,push=true
           # No cache on a release build: a release is a trust anchor, so it builds clean from source.
           provenance: false
