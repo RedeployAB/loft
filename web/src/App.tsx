@@ -60,6 +60,13 @@ export function App(): React.JSX.Element {
     (overwrite: boolean) => {
       const name = site.replace(/-$/, ""); // a trailing hyphen is fine mid-edit, not on submit
       if (files.length === 0 || !name) return;
+      // A deliberate copy of one server rule (internal/siterules): the API refuses a site with no
+      // root index.html, and checking here saves uploading the whole site to learn that.
+      if (!files.some((f) => f.path === "index.html")) {
+        setError("no index.html at the root of the site (deploy your build output, e.g. ./dist)");
+        setPhase("error");
+        return;
+      }
       setPhase("deploying");
       setError("");
       deploy(name, files, overwrite)

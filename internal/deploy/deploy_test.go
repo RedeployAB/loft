@@ -3,8 +3,10 @@ package deploy
 import (
 	"bytes"
 	"mime/multipart"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -87,6 +89,75 @@ func TestStageRejectsTraversal(t *testing.T) {
 	// The sanitized basename stays inside staging.
 	if _, err := os.Stat(filepath.Join(staging, "escape.js")); err != nil {
 		t.Fatalf("expected sanitized file inside staging: %v", err)
+	}
+}
+
+// TestStageRequiresRootIndex checks that a deploy with no index.html at the site root is refused.
+// nginx only serves the root from index.html, so such a site answers "/" with a bare 403; a nested
+// or differently named entry point does not count.
+func TestStageRequiresRootIndex(t *testing.T) {
+	cases := map[string]map[string]string{
+		"single page under another name": {"report.html": "<h1>hi</h1>"},
+		"index nested one level down":    {"dist/index.html": "<h1>hi</h1>", "dist/app.js": "1"},
+		"assets only":                    {"assets/app.js": "1", "assets/app.css": "2"},
+	}
+	for name, files := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, uerr := stage(buildForm(t, "report", files), t.TempDir())
+			if uerr == nil {
+				t.Fatal("expected stage to refuse a site without a root index.html")
+			}
+			if uerr.status != http.StatusBadRequest || !strings.Contains(uerr.msg, "index.html") {
+				t.Fatalf("got %d %q, want 400 naming index.html", uerr.status, uerr.msg)
+			}
+		})
+	}
+
+	if _, uerr := stage(buildForm(t, "report", map[string]string{"index.html": "<h1>hi</h1>"}), t.TempDir()); uerr != nil {
+		t.Fatalf("a root index.html alone should deploy: %+v", uerr)
+	}
+}
+
+// TestStageRefusesNonSiteFiles checks that the API applies the shared content rules itself and does
+// not rely on the CLI having done so: a project folder marker, a dotenv file, or anything that is
+// not a static web asset ends the deploy with a 400 that names the offender, and nothing from that
+// part is left in staging. OS folder metadata is dropped without failing the deploy.
+func TestStageRefusesNonSiteFiles(t *testing.T) {
+	cases := map[string]struct {
+		rel    string
+		want   string // substring of the 400 message, or "" when the deploy succeeds
+		staged bool   // whether rel ends up in staging on success
+	}{
+		"node_modules":    {"node_modules/left-pad/index.js", "node_modules/", false},
+		"git tree":        {".git/config", ".git/", false},
+		"dotenv":          {".env", "secret file .env", false},
+		"nested dotenv":   {"config/.env.production", "secret file config/.env.production", false},
+		"shell script":    {"deploy.sh", "disallowed file type", false},
+		"binary":          {"bin/tool.exe", "disallowed file type", false},
+		"no extension":    {"LICENSE", "disallowed file type", false},
+		"source map":      {"assets/app.js.map", "", true},
+		"finder metadata": {".DS_Store", "", false},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			staging := t.TempDir()
+			files := map[string]string{"index.html": "<h1>hi</h1>", tc.rel: "x"}
+			_, uerr := stage(buildForm(t, "site", files), staging)
+			if tc.want != "" {
+				if uerr == nil {
+					t.Fatalf("expected stage to refuse %q", tc.rel)
+				}
+				if uerr.status != http.StatusBadRequest || !strings.Contains(uerr.msg, tc.want) {
+					t.Fatalf("got %d %q, want 400 containing %q", uerr.status, uerr.msg, tc.want)
+				}
+			} else if uerr != nil {
+				t.Fatalf("expected %q to deploy: %+v", tc.rel, uerr)
+			}
+			_, err := os.Stat(filepath.Join(staging, filepath.FromSlash(tc.rel)))
+			if present := err == nil; present != tc.staged {
+				t.Fatalf("%q in staging = %v, want %v", tc.rel, present, tc.staged)
+			}
+		})
 	}
 }
 
