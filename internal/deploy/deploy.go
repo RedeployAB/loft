@@ -46,9 +46,9 @@ const (
 
 // minCLIVersion is the oldest CLI this API still speaks to. Bump it only when the deploy protocol
 // changes in a way an older CLI cannot follow (the multipart shape, a required header, the auth
-// exchange); a rule change the server enforces on its own does not count. CLIs before v0.2.0 sent
+// exchange); a rule change the server enforces on its own does not count. CLIs before v0.1.8 sent
 // no loft-cli User-Agent, so the gate below cannot reach them: they fail on the protocol change
-// itself. Only a CLI from v0.2.0 on gets the readable refusal.
+// itself. Only a CLI from v0.1.8 on gets the readable refusal.
 const minCLIVersion = "v0.1.0"
 
 // Service is the loft deploy HTTP service.
