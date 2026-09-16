@@ -170,6 +170,7 @@ func (s *Service) deploy(w http.ResponseWriter, r *http.Request) {
 type staged struct {
 	site      string
 	overwrite bool
+	hasIndex  bool
 	files     int
 	bytes     int64
 }
@@ -208,6 +209,12 @@ func stage(mr *multipart.Reader, staging string) (staged, *userError) {
 	if out.files == 0 {
 		return out, &userError{http.StatusBadRequest, "no files to deploy"}
 	}
+	// nginx serves the site root from index.html and nothing else, so a deploy without one answers
+	// every visit to https://<site>.<domain>/ with a bare 403. The CLI checks this before uploading;
+	// the console does too, but this is the gate every client goes through.
+	if !out.hasIndex {
+		return out, &userError{http.StatusBadRequest, "no index.html at the root of the site (deploy your build output, e.g. ./dist)"}
+	}
 	return out, nil
 }
 
@@ -219,6 +226,9 @@ func stageFile(staging string, part *multipart.Part, out *staged) *userError {
 	rel := cleanRelPath(partPath(part))
 	if rel == "" {
 		return nil // a part with no usable path (e.g. an empty dir entry)
+	}
+	if rel == "index.html" {
+		out.hasIndex = true
 	}
 	out.files++
 	if out.files > maxFiles {

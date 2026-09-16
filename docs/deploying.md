@@ -28,8 +28,10 @@ Each release publishes two images to GHCR:
 
 ## Serving deployed sites
 
-A deployed site is served as plain static files, and a real file always wins. What happens on a miss
-depends on the request and on whether the site ships a `404.html`:
+A deployed site is served as plain static files, and a real file always wins. Every site needs an
+`index.html` at its root: nginx serves `/` from that file alone, so both the CLI and the deploy API
+refuse a site without one rather than publish a root that answers with a 403. What happens on a
+miss depends on the request and on whether the site ships a `404.html`:
 
 - Single-page apps work by default. A page request (one whose `Accept` includes `text/html`) for a
   path with no file gets `index.html` back with a `200`, so a client-side router resolves deep links
