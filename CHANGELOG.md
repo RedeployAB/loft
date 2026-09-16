@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.8](https://github.com/RedeployAB/loft/compare/v0.1.7...v0.1.8) (2026-09-16)
+
+
+### Features
+
+* Tell the CLI when it is out of date or no longer supported ([#19](https://github.com/RedeployAB/loft/issues/19)) ([3b0df84](https://github.com/RedeployAB/loft/commit/3b0df84032fc46d70f694ce90d084569cf6d0bc0))
+
+
+### Documentation
+
+* Name the release the CLI version gate starts at correctly ([c741dd7](https://github.com/RedeployAB/loft/commit/c741dd7cece250ee0c0e5d70ec82494a4414827c))
+
 ## [0.1.7](https://github.com/RedeployAB/loft/compare/v0.1.6...v0.1.7) (2026-09-16)
 
 
