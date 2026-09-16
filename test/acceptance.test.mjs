@@ -246,10 +246,10 @@ describe("CLI discovery (/.well-known/loft)", () => {
 describe("deploy + delete", () => {
   const apex = { site: "" }; // empty X-Loft-Site → the request originates from the apex
   const cli = { "X-Loft-Deploy-Client": "cli" };
-  const siteForm = (name, { overwrite = false } = {}) => {
+  const siteForm = (name, { overwrite = false, files = { "index.html": "<h1>hi</h1>" } } = {}) => {
     const fd = new FormData();
     fd.append("site", name); // the server requires the site field before the files
-    fd.append("files", new Blob(["<h1>hi</h1>"], { type: "text/html" }), "index.html");
+    for (const [path, body] of Object.entries(files)) fd.append("files", new Blob([body]), path);
     if (overwrite) fd.append("overwrite", "true");
     return fd;
   };
@@ -272,6 +272,25 @@ describe("deploy + delete", () => {
 
     const del2 = await t.req("DELETE", "/api/deploy?site=blogtest", { ...apex, headers: cli });
     assert.equal(del2.status, 404); // already gone
+  });
+
+  it("refuses a site the content rules reject, whichever client sends it", async () => {
+    // The CLI checks these locally, but the API is the gate every client passes through: a site
+    // with no entry point would serve a bare 403 at "/", and a dotenv file must never land on the
+    // share. Nothing may be created for a refused deploy. The full rule set is covered by the
+    // siterules and deploy unit tests. Runs as its own user: the deploy rate limit is per user and
+    // the rest of this suite already spends most of alice's burst.
+    const bob = { ...apex, user: "bob", headers: cli };
+    const noIndex = await t.req("POST", "/api/deploy", { ...bob, raw: siteForm("rules", { files: { "report.html": "<h1>hi</h1>" } }) });
+    assert.equal(noIndex.status, 400, noIndex.text);
+    assert.match(noIndex.text, /index\.html/);
+
+    const dotenv = await t.req("POST", "/api/deploy", { ...bob, raw: siteForm("rules", { files: { "index.html": "<h1>hi</h1>", ".env": "KEY=1" } }) });
+    assert.equal(dotenv.status, 400, dotenv.text);
+    assert.match(dotenv.text, /secret file/);
+
+    const del = await t.req("DELETE", "/api/deploy?site=rules", bob);
+    assert.equal(del.status, 404, "a refused deploy must not create the site");
   });
 
   it("refuses a browser deploy with neither same-origin nor the CLI header (CSRF gate)", async () => {

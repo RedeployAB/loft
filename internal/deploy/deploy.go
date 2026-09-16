@@ -34,13 +34,11 @@ import (
 
 	"github.com/RedeployAB/loft/internal/config"
 	"github.com/RedeployAB/loft/internal/limit"
+	"github.com/RedeployAB/loft/internal/siterules"
 	"github.com/RedeployAB/loft/internal/web"
 )
 
 const (
-	maxFileBytes  = 25 * 1024 * 1024  // per file, matches the upload/CLI limit
-	maxTotalBytes = 100 * 1024 * 1024 // per deploy, across all files
-	maxFiles      = 2000              // per deploy
 	deploysPerMin = 30
 	deployBurst   = 10
 )
@@ -170,7 +168,6 @@ func (s *Service) deploy(w http.ResponseWriter, r *http.Request) {
 type staged struct {
 	site      string
 	overwrite bool
-	hasIndex  bool
 	files     int
 	bytes     int64
 }
@@ -209,11 +206,9 @@ func stage(mr *multipart.Reader, staging string) (staged, *userError) {
 	if out.files == 0 {
 		return out, &userError{http.StatusBadRequest, "no files to deploy"}
 	}
-	// nginx serves the site root from index.html and nothing else, so a deploy without one answers
-	// every visit to https://<site>.<domain>/ with a bare 403. The CLI checks this before uploading;
-	// the console does too, but this is the gate every client goes through.
-	if !out.hasIndex {
-		return out, &userError{http.StatusBadRequest, "no index.html at the root of the site (deploy your build output, e.g. ./dist)"}
+	// A whole-site rule, so it is answered by the staged tree once every part is in.
+	if fi, err := os.Stat(filepath.Join(staging, siterules.IndexFile)); err != nil || fi.IsDir() {
+		return out, &userError{http.StatusBadRequest, "no " + siterules.IndexFile + " at the root of the site (deploy your build output, e.g. ./dist)"}
 	}
 	return out, nil
 }
@@ -227,14 +222,20 @@ func stageFile(staging string, part *multipart.Part, out *staged) *userError {
 	if rel == "" {
 		return nil // a part with no usable path (e.g. an empty dir entry)
 	}
-	if rel == "index.html" {
-		out.hasIndex = true
+	// The body streams, so the first refused file ends the deploy before its bytes are written. The
+	// CLI has already listed every problem at once for its users; this is the gate for everyone else.
+	switch v := siterules.Check(rel); v.Kind {
+	case siterules.Skip:
+		return nil
+	case siterules.OK:
+	default:
+		return &userError{http.StatusBadRequest, v.Reason}
 	}
 	out.files++
-	if out.files > maxFiles {
+	if out.files > siterules.MaxFiles {
 		return &userError{http.StatusRequestEntityTooLarge, "too many files in one deploy"}
 	}
-	n, err := writeFile(staging, rel, part, maxTotalBytes-out.bytes)
+	n, err := writeFile(staging, rel, part, siterules.MaxTotalBytes-out.bytes)
 	if err != nil {
 		return &userError{http.StatusRequestEntityTooLarge, err.Error()}
 	}
@@ -346,7 +347,7 @@ func writeFile(staging, rel string, part *multipart.Part, remaining int64) (int6
 	}
 	defer func() { _ = f.Close() }()
 
-	lim := int64(maxFileBytes)
+	lim := int64(siterules.MaxFileBytes)
 	if remaining < lim {
 		lim = remaining
 	}

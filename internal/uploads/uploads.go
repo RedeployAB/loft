@@ -7,6 +7,7 @@ package uploads
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -21,10 +22,9 @@ import (
 
 	"github.com/RedeployAB/loft/internal/config"
 	"github.com/RedeployAB/loft/internal/limit"
+	"github.com/RedeployAB/loft/internal/siterules"
 	"github.com/RedeployAB/loft/internal/web"
 )
-
-const maxBytes = 25 * 1024 * 1024 // matches the CLI's per-file limit
 
 // ErrNotConfigured means no upload backend (blob or dir) is configured.
 var ErrNotConfigured = errors.New("uploads not configured")
@@ -104,10 +104,10 @@ func (s *Service) upload(w http.ResponseWriter, r *http.Request) {
 	filename := safeName(firstHeader(r, "X-Loft-Filename", "file"))
 	contentType := firstHeader(r, "Content-Type", "application/octet-stream")
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
+	r.Body = http.MaxBytesReader(w, r.Body, siterules.MaxFileBytes)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		web.Error(w, http.StatusRequestEntityTooLarge, "file exceeds 25MB")
+		web.Error(w, http.StatusRequestEntityTooLarge, fmt.Sprintf("file exceeds %dMB", siterules.MaxFileBytes>>20))
 		return
 	}
 	if len(body) == 0 {

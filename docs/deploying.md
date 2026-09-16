@@ -28,10 +28,13 @@ Each release publishes two images to GHCR:
 
 ## Serving deployed sites
 
-A deployed site is served as plain static files, and a real file always wins. Every site needs an
-`index.html` at its root: nginx serves `/` from that file alone, so both the CLI and the deploy API
-refuse a site without one rather than publish a root that answers with a 403. What happens on a
-miss depends on the request and on whether the site ships a `404.html`:
+A deployed site is served as plain static files, and a real file always wins. The deploy API
+enforces the same content rules the CLI checks locally (`internal/siterules`): an `index.html` at
+the root, since nginx serves `/` from that file alone and a site without one answers with a 403;
+static web asset extensions only (anything under `.well-known/` is allowed by name); no
+`node_modules/` or `.git/`; no `.env*` files. OS folder metadata such as `.DS_Store` is dropped
+rather than refused. What happens on a miss depends on
+the request and on whether the site ships a `404.html`:
 
 - Single-page apps work by default. A page request (one whose `Accept` includes `text/html`) for a
   path with no file gets `index.html` back with a `200`, so a client-side router resolves deep links
