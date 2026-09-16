@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.7](https://github.com/RedeployAB/loft/compare/v0.1.6...v0.1.7) (2026-09-16)
+
+
+### Bug fixes
+
+* Require index.html and enforce site content rules in the deploy API ([0901b3b](https://github.com/RedeployAB/loft/commit/0901b3be297309e4b24ef501f2d79b71919754b2))
+
+
+### Dependencies
+
+* Refresh go modules and console packages ([#18](https://github.com/RedeployAB/loft/issues/18)) ([4138be5](https://github.com/RedeployAB/loft/commit/4138be5ef2a1f38fcb1e5c5c03df895aac93233e))
+
 ## [0.1.6](https://github.com/RedeployAB/loft/compare/v0.1.5...v0.1.6) (2026-08-31)
 
 
