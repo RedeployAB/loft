@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.9](https://github.com/RedeployAB/loft/compare/v0.1.8...v0.1.9) (2026-09-21)
+
+
+### Bug fixes
+
+* Refuse a request whose tenant the proxy did not set ([#22](https://github.com/RedeployAB/loft/issues/22)) ([feca9d4](https://github.com/RedeployAB/loft/commit/feca9d44370d3dc6c101ad2e8e95a6012a137521))
+
 ## [0.1.8](https://github.com/RedeployAB/loft/compare/v0.1.7...v0.1.8) (2026-09-16)
 
 
