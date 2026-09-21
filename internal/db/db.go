@@ -67,6 +67,10 @@ func (s *Store) Handler() http.Handler { return http.HandlerFunc(s.serve) }
 func (s *Store) serve(w http.ResponseWriter, r *http.Request) {
 	user, _ := web.User(r.Context())
 	site := web.Site(r)
+	if site == "" {
+		web.Error(w, http.StatusInternalServerError, "no tenant on request")
+		return
+	}
 	rest := strings.TrimPrefix(r.URL.Path, "/api/db/")
 	collection, id, _ := strings.Cut(rest, "/")
 	collection = strings.TrimSpace(collection)

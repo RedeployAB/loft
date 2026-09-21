@@ -213,10 +213,12 @@ export async function setup() {
 
 // HTTP/WS helpers that inject the tenant header plus a signed Bearer, mirroring what the proxy
 // forwards in production. site → X-Loft-Site (the trusted tenant header nginx sets from the validated
-// server name). user/id → the identity minted into the token (oid = the immutable identity key).
+// server name; null sends no header, as a proxy that failed to pin the tenant would). user/id → the
+// identity minted into the token (oid = the immutable identity key).
 function makeContext(baseUrl, port, uploadsDir, idp) {
   const idHeaders = ({ site = "sitea", user = "alice", id, anon = false, scope } = {}) => {
-    const h = { "X-Loft-Site": site };
+    const h = {};
+    if (site !== null) h["X-Loft-Site"] = site;
     // The proxy forwards a validated access token; the suite mints one per request. anon → no token
     // (exercises the 401 paths); scope → mint a reduced-scope token (e.g. the CLI's deploy-only token).
     if (!anon) h["Authorization"] = `Bearer ${idp.mint(`${user}@test`, id ?? user, user, scope)}`;

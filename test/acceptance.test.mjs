@@ -96,6 +96,26 @@ describe("loft.db — tenant isolation (RLS)", () => {
     assert.equal((await t.req("GET", `/api/db/secret/${a.id}`, { site: "tenantA" })).json.k, "v");
   });
 
+  it("refuses a request the proxy did not pin to a tenant, instead of defaulting it", async () => {
+    // A proxy rule that misses a host (or one written for another environment) must fail loudly.
+    // Defaulting would fold every unmatched site into one shared bucket.
+    for (const site of [null, "", "   ", "!!!"]) {
+      const r = await t.req("GET", "/api/db/feedback", { site });
+      assert.equal(r.status, 500, `site=${JSON.stringify(site)}`);
+      assert.match(r.text, /X-Loft-Site/);
+    }
+    // The apex is a real tenant only when named.
+    assert.equal((await t.req("GET", "/api/db/feedback", { site: "_apex" })).status, 200);
+  });
+
+  it("keeps a collection with the same name apart per site", async () => {
+    const a = (await t.req("POST", "/api/db/feedback", { site: "sowstudio", body: { text: "from a" } })).json;
+    const b = (await t.req("POST", "/api/db/feedback", { site: "redeplan", body: { text: "from b" } })).json;
+    assert.deepEqual((await t.req("GET", "/api/db/feedback", { site: "sowstudio" })).json.map((d) => d.id), [a.id]);
+    assert.deepEqual((await t.req("GET", "/api/db/feedback", { site: "redeplan" })).json.map((d) => d.id), [b.id]);
+    assert.equal((await t.req("GET", "/api/db/feedback", { site: "_apex" })).json.length, 0);
+  });
+
   it("ignores a spoofed X-Forwarded-Host — tenant comes only from the trusted X-Loft-Site", async () => {
     const a = (await t.req("POST", "/api/db/spoofcheck", { site: "victim", body: { k: "v" } })).json;
     const spoof = { "X-Forwarded-Host": "victim.loft.test", "Host": "victim.loft.test" };
@@ -251,7 +271,7 @@ describe("CLI discovery (/.well-known/loft)", () => {
 });
 
 describe("deploy + delete", () => {
-  const apex = { site: "" }; // empty X-Loft-Site → the request originates from the apex
+  const apex = { site: "_apex" }; // the proxy names the apex explicitly; there is no default tenant
   const cli = { "X-Loft-Deploy-Client": "cli" };
   const siteForm = (name, { overwrite = false, files = { "index.html": "<h1>hi</h1>" } } = {}) => {
     const fd = new FormData();
