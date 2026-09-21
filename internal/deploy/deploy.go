@@ -5,8 +5,8 @@
 // Both the browser console and the `loft` CLI deploy here. Three gates keep this from becoming a way
 // for one hosted site to publish over others (the flat-trust model authorizes every user for
 // every site, so the only boundary that matters here is WHERE the call originates):
-//   - origin: the request must come from the apex (X-Loft-Site = _apex, set by the proxy from the
-//     validated hostname and never client-settable), never a hosted site.
+//   - origin: the request must come from the apex (X-Loft-Site names it as _apex, set by the proxy
+//     from the validated hostname and never client-settable), never a hosted site.
 //   - fetch metadata: Sec-Fetch-Site must be same-origin, none, or absent. Browsers always send this
 //     and page script cannot forge or strip it, so a deploy driven from any other origin (same-site
 //     subdomain or cross-site) is refused regardless of CORS. This is the load-bearing defense against
@@ -112,7 +112,7 @@ func (s *Service) Handler() http.Handler {
 // deployAllowed enforces the origin + CSRF gates (see the package doc). Returns the user-facing
 // reason when refused.
 func deployAllowed(r *http.Request) (string, bool) {
-	if web.Site(r) != "_apex" {
+	if web.Site(r) != web.Apex {
 		return "deploy is only available from the console or the CLI", false
 	}
 	// Fetch-metadata backstop. Browsers always send Sec-Fetch-Site and page script can neither forge
@@ -137,7 +137,7 @@ func deployAllowed(r *http.Request) (string, bool) {
 // host is, so it can only ever name a directory directly under the sites root.
 func (s *Service) remove(w http.ResponseWriter, r *http.Request) {
 	site := web.SanitizeLabel(strings.TrimSpace(r.URL.Query().Get("site")))
-	if site == "" || site == "_apex" {
+	if site == "" || site == web.Apex {
 		web.Error(w, http.StatusBadRequest, "a site name is required")
 		return
 	}
@@ -229,7 +229,7 @@ func stage(mr *multipart.Reader, staging string) (staged, *userError) {
 			}
 		}
 	}
-	if out.site == "" || out.site == "_apex" {
+	if out.site == "" || out.site == web.Apex {
 		return out, &userError{http.StatusBadRequest, "a site name is required"}
 	}
 	if out.files == 0 {
@@ -244,7 +244,7 @@ func stage(mr *multipart.Reader, staging string) (staged, *userError) {
 
 // stageFile writes one "files" part and updates the running totals.
 func stageFile(staging string, part *multipart.Part, out *staged) *userError {
-	if out.site == "" || out.site == "_apex" {
+	if out.site == "" || out.site == web.Apex {
 		return &userError{http.StatusBadRequest, "site name must come before the files"}
 	}
 	rel := cleanRelPath(partPath(part))

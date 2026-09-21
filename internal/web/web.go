@@ -9,12 +9,18 @@ import (
 	"net/http"
 	"regexp"
 	"slices"
+	"strings"
 
 	"github.com/RedeployAB/loft/internal/identity"
 )
 
 type ctxKey struct{}
 type scopeKey struct{}
+type siteKey struct{}
+
+// Apex is the tenant of the platform's own host (the console). The proxy names it explicitly in
+// X-Loft-Site. It is never a fallback: an unset header is a misconfigured proxy, not the apex.
+const Apex = "_apex"
 
 var nonLabel = regexp.MustCompile(`[^a-z0-9-]+`)
 
@@ -26,7 +32,7 @@ var nonLabel = regexp.MustCompile(`[^a-z0-9-]+`)
 // user. It is intentionally the ONLY trust boundary: every authenticated user is authorized for
 // EVERY site. There is no per-site membership check, by design: this is an internal tool where all
 // users are trusted to build on and collaborate across all sites. Cross-site isolation is therefore
-// DATA SCOPING, not authorization: Site() pins the tenant from the trusted X-Loft-Site host so a caller
+// DATA SCOPING, not authorization: Auth pins the tenant from the trusted X-Loft-Site header so a caller
 // cannot reach a tenant other than the one whose host they are on, RLS enforces that boundary in
 // Postgres, and uploads key on the same prefix. The risks this model accepts (one user can mutate or
 // delete another site's shared documents and uploads, and consume its AI budget) are bounded NOT by
@@ -34,6 +40,11 @@ var nonLabel = regexp.MustCompile(`[^a-z0-9-]+`)
 // user) daily AI token budgets. Owner-only collections add intra-site, per-document protection on top.
 // If per-site authorization is ever required, add a membership table and a 403 gate here. Do not weaken
 // the data-scoping that this model leans on.
+//
+// The tenant is resolved here too, and a request the proxy did not pin to one is refused with 500
+// rather than served under some default. A proxy that fails to name the tenant (a host its rules do
+// not match, a rule written for another environment) must break loudly, never fold every site into
+// one shared bucket.
 func Auth(r *identity.Resolver, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		user, scopes, ok := r.UserFromHeaders(req.Context(), req.Header)
@@ -41,8 +52,14 @@ func Auth(r *identity.Resolver, next http.Handler) http.Handler {
 			Error(w, http.StatusUnauthorized, "not authenticated")
 			return
 		}
+		site, ok := tenant(req.Header.Get("X-Loft-Site"))
+		if !ok {
+			Error(w, http.StatusInternalServerError, "tenant not set: the proxy must send X-Loft-Site for every request")
+			return
+		}
 		ctx := context.WithValue(req.Context(), ctxKey{}, user)
 		ctx = context.WithValue(ctx, scopeKey{}, scopes)
+		ctx = context.WithValue(ctx, siteKey{}, site)
 		next.ServeHTTP(w, req.WithContext(ctx))
 	})
 }
@@ -68,24 +85,37 @@ func RequireScope(scope string, next http.Handler) http.Handler {
 	})
 }
 
-// Site is the calling tenant. It is taken ONLY from the X-Loft-Site header, which the ingress proxy
-// sets from the validated server name and overwrites on every request, so a client cannot spoof it
-// to reach another tenant. Missing/empty maps to the apex. We must NEVER derive the tenant from a
-// client-controllable value such as X-Forwarded-Host or the raw Host: that would let any caller read
-// or write another site's data (the boundary RLS and the upload key prefix both hang off this).
+// Site is the calling tenant, as Auth resolved it from the X-Loft-Site header. The ingress proxy
+// sets that header from the validated server name and overwrites it on every request, so a client
+// cannot spoof it to reach another tenant. We must NEVER derive the tenant from a client-controllable
+// value such as X-Forwarded-Host or the raw Host: that would let any caller read or write another
+// site's data (the boundary RLS and the upload key prefix both hang off this). Empty only if the
+// handler was reached without Auth (a programming error); consumers must refuse an empty site, not
+// default it.
 func Site(req *http.Request) string {
-	s := req.Header.Get("X-Loft-Site")
-	if s == "" {
-		return "_apex"
-	}
-	return SanitizeLabel(s)
+	s, _ := req.Context().Value(siteKey{}).(string)
+	return s
 }
 
-// SanitizeLabel lowercases and reduces a string to [a-z0-9-], or "_apex" if nothing remains.
+// tenant parses an X-Loft-Site value. ok is false when the proxy named no tenant: the header is
+// absent or empty, or holds nothing a hostname label could carry. The apex is only ever named
+// explicitly.
+func tenant(h string) (string, bool) {
+	if h == Apex {
+		return Apex, true
+	}
+	s := nonLabel.ReplaceAllString(toLower(h), "-")
+	if strings.Trim(s, "-") == "" {
+		return "", false
+	}
+	return s, true
+}
+
+// SanitizeLabel lowercases and reduces a string to [a-z0-9-], or the apex if nothing remains.
 func SanitizeLabel(s string) string {
 	s = nonLabel.ReplaceAllString(toLower(s), "-")
 	if s == "" {
-		return "_apex"
+		return Apex
 	}
 	return s
 }

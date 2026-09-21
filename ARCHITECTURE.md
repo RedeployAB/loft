@@ -22,8 +22,10 @@ loftd is never trusted-open. It expects the proxy to authenticate the user and f
 - `Authorization: Bearer <token>`, a validated OIDC access token minted for loftd's own API
   (audience + scope). loftd re-validates it, so the API is closed even to a caller inside the
   network. There is no header- or proxy-trust identity fallback.
-- `X-Loft-Site: <site>`, derived from the hostname by the proxy (the only trusted source). loftd
-  scopes every query to it.
+- `X-Loft-Site: <site>`, derived from the hostname by the proxy (the only trusted source), on every
+  request: the site label for `<site>.<domain>`, the literal `_apex` for the platform's own host.
+  loftd scopes every query to it and refuses a request that carries no tenant with a 500. There is
+  no default: a host the proxy's rules do not match must fail, never land in a shared bucket.
 - The browser's `Sec-Fetch-Site` header, forwarded unchanged. loftd uses it to refuse a deploy driven
   from a hosted site, including a same-site subdomain whose session cookie the browser would still
   send. Stripping it would weaken that protection.
